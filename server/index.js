@@ -1,8 +1,10 @@
+// index.js
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const http = require("http");
 const { Server } = require("socket.io");
+const cors = require("cors");
 
 const userRoutes = require("./Routs/User");
 const {
@@ -11,6 +13,7 @@ const {
 } = require("./Routs/notification");
 
 const app = express();
+app.use(cors());
 dotenv.config();
 
 app.use(express.json());

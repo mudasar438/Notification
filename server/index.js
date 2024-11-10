@@ -5,7 +5,10 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const userRoutes = require("./Routs/User");
-const notificationRoutes = require("./Routs/notification");
+const {
+  router: notificationRoutes,
+  initializeSocket,
+} = require("./Routs/notification");
 
 const app = express();
 dotenv.config();
@@ -14,21 +17,10 @@ app.use(express.json());
 const server = http.createServer(app);
 
 // -------------------  Socket.io  ------------------------
-
 const io = new Server(server, { cors: { origin: "*" } });
 
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  // Listen for new notifications
-  socket.on("sendNotification", (notification) => {
-    io.emit("receiveNotification", notification);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-  });
-});
+// Initialize Socket.io in the notifications route
+initializeSocket(io);
 
 app.use("/users", userRoutes);
 app.use("/notifications", notificationRoutes);

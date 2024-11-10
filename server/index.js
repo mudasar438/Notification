@@ -1,20 +1,22 @@
+// index.js
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const http = require("http");
 const { Server } = require("socket.io");
+const cors = require("cors");
 
 const userRoutes = require("./Routs/User");
-const notificationRoutes = require("./Routs/notification");
+const notificationRoutes = require("./Routs/notification"); // Import routes
 
 const app = express();
+app.use(cors());
 dotenv.config();
 
 app.use(express.json());
 const server = http.createServer(app);
 
-// -------------------  Socket.io  ------------------------
-
+// Initialize Socket.io and configure it to allow connections from any origin
 const io = new Server(server, { cors: { origin: "*" } });
 
 io.on("connection", (socket) => {
@@ -29,6 +31,9 @@ io.on("connection", (socket) => {
     console.log("User disconnected:", socket.id);
   });
 });
+
+// Export io after it’s initialized
+module.exports = { io };
 
 app.use("/users", userRoutes);
 app.use("/notifications", notificationRoutes);

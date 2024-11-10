@@ -13,7 +13,9 @@ router.post("/addNotification", async (req, res) => {
     userId: req.body.userId,
     message: `this is a Notification`,
   });
+
   const saved = await notifications.save();
+
   res.json(saved);
 });
 router.put("/:id", async (req, res) => {

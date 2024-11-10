@@ -11,6 +11,12 @@ const initializeSocket = (socketIoInstance) => {
   io.on("connection", (socket) => {
     console.log("A user connected");
 
+    // Join the user-specific room based on userId received from client-side
+    socket.on("joinRoom", (userId) => {
+      socket.join(userId);
+      console.log(`User with ID ${userId} joined their room`);
+    });
+
     socket.on("disconnect", () => {
       console.log("User disconnected");
     });
@@ -34,9 +40,9 @@ router.post("/addNotification", async (req, res) => {
   const saved = await notification.save();
   res.json(saved);
 
-  // Emit the new notification to all connected clients
+  // Emit the new notification to the specific user's room
   if (io) {
-    io.emit("newNotification", saved);
+    io.to(req.body.userId).emit("receiveNotification", saved);
   }
 });
 

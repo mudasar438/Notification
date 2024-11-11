@@ -1,42 +1,50 @@
 // index.js
 const express = require("express");
-const mongoose = require("mongoose");
-const dotenv = require("dotenv");
 const http = require("http");
-const { Server } = require("socket.io");
+const socketIo = require("socket.io");
 const cors = require("cors");
-
-const userRoutes = require("./Routs/User");
-const {
-  router: notificationRoutes,
-  initializeSocket,
-} = require("./Routs/notification");
 
 const app = express();
 app.use(cors());
-dotenv.config();
 
-app.use(express.json());
 const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*", // Limit in production
+    methods: ["GET", "POST"],
+  },
+});
 
-// -------------------  Socket.io  ------------------------
-const io = new Server(server, { cors: { origin: "*" } });
+const PORT = process.env.PORT || 4000;
 
-// Initialize Socket.io in the notifications route
-initializeSocket(io);
+io.on("connection", (socket) => {
+  // Assume the client sends the `userId` upon connection
+  const { userId } = socket.handshake.query;
 
-app.use("/users", userRoutes);
-app.use("/notifications", notificationRoutes);
+  if (userId) {
+    socket.join(userId); // Place the user in a room identified by their `userId`
+    console.log(`User connected: ${userId}`);
+  } else {
+    console.log("No userId provided, disconnecting...");
+    socket.disconnect(); // Disconnect if no userId is provided
+  }
 
-mongoose
-  .connect(
-    "mongodb+srv://root:root@cluster0.cxkta.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
-  )
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  // Handle disconnection
+  socket.on("disconnect", () => {
+    console.log(`User disconnected: ${userId}`);
+  });
+});
 
-server.listen(5000, () => console.log("Server running on port 5000"));
+// Endpoint to send a notification to a specific user
+app.post("/notify-user", express.json(), (req, res) => {
+  const { userId, message } = req.body;
+  if (!userId || !message) {
+    return res.status(400).json({ error: "userId and message are required" });
+  }
+
+  // Emit the notification to the specific user's room
+  io.to(userId).emit("notification", { message, timestamp: new Date() });
+  res.status(200).json({ success: true, message: "Notification sent" });
+});
+
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
